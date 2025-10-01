@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pandas
+scikit-learn
+joblib
+streamlit
+python-dotenv
+passlib[bcrypt]
+python-jose[cryptography]
+requests
+pika
+pyarrow
