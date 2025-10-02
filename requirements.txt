@@ -1,12 +1,19 @@
+python-multipart
 fastapi
 uvicorn[standard]
 pandas
+numpy
 scikit-learn
 joblib
-streamlit
-python-dotenv
-passlib[bcrypt]
-python-jose[cryptography]
-requests
-pika
 pyarrow
+lightgbm
+shap
+requests
+streamlit
+passlib[bcrypt]
+python-jose
+python-dotenv
+pika
+plotly
+# transformers   # optional fallback
+# torch          # optional: huge, remove for faster builds if not used

@@ -1,4 +1,3 @@
-# app.py
 # preprocessor/app.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -7,8 +6,14 @@ from .preprocess import run_preprocessing
 
 app = FastAPI(title="PreprocessorAgent", version="0.1")
 
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "service": "preprocessor"}
+
+
 class PreprocessRequest(BaseModel):
-    raw_path: str | None = None  # path under data/raw
+    raw_path: str | None = None
 
 @app.post("/preprocess")
 def preprocess(req: PreprocessRequest):

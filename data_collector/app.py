@@ -1,47 +1,39 @@
 # data_collector/app.py
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
-import os, shutil, pandas as pd, json
-from datetime import datetime
+from .collector import save_raw_from_path, save_raw_from_upload
 from pathlib import Path
 
-app = FastAPI(title="DataCollectorAgent")
-
+app = FastAPI(title="DataCollectorAgent", version="0.1")
 RAW_DIR = Path("data/raw")
-METADATA_DIR = Path("data/metadata")
-SAMPLE_SOURCE = Path("data/sample_data/sample_crop.csv")
-
 RAW_DIR.mkdir(parents=True, exist_ok=True)
-METADATA_DIR.mkdir(parents=True, exist_ok=True)
 
 class CollectRequest(BaseModel):
-    source: str = "local"   # "local" | "uploaded"
+    source: str = "local"
     path: str | None = None
 
-def _dest_name():
-    return f"raw_{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}.csv"
+@app.get("/health")
+def health():
+    return {"status": "ok", "service": "collector"}
 
 @app.post("/collect")
 def collect(req: CollectRequest):
     if req.source == "local":
-        src = Path(req.path) if req.path else SAMPLE_SOURCE
-        if not src.exists():
-            raise HTTPException(404, f"Source not found: {src}")
-        dst = RAW_DIR / _dest_name()
-        shutil.copy(src, dst)
-        meta = {"source": str(src), "dst": str(dst), "time": datetime.utcnow().isoformat()}
-        (METADATA_DIR / (dst.stem + ".json")).write_text(json.dumps(meta))
-        return {"status": "collected", "path": str(dst), "meta": meta}
+        src = req.path or "data/crop_yield.csv"
+        # Let save_raw_from_path handle missing files by creating synthetic data
+        dst = save_raw_from_path(src)
+        return {"status": "collected", "path": dst}
     else:
-        raise HTTPException(400, "Use /upload for multipart uploads")
+        raise HTTPException(400, "Unsupported source")
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
     if not file.filename.endswith(".csv"):
-        raise HTTPException(400, "Only csv uploads supported")
-    dest = RAW_DIR / _dest_name()
-    content = await file.read()
-    dest.write_bytes(content)
-    meta = {"source": file.filename, "dst": str(dest), "time": datetime.utcnow().isoformat()}
-    (METADATA_DIR / (dest.stem + ".json")).write_text(json.dumps(meta))
-    return {"status": "uploaded", "path": str(dest)}
+        raise HTTPException(400, "Only CSV allowed")
+    dst = await save_raw_from_upload(file)
+    return {"status": "uploaded", "path": dst}
+
+@app.get("/list")
+def list_raws():
+    files = sorted([str(p) for p in RAW_DIR.glob("*.csv")])
+    return {"files": files}

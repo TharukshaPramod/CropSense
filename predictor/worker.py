@@ -1,11 +1,10 @@
 # predictor/worker.py
 import pika, json, os, subprocess
+
 def on_message(ch, method, properties, body):
     msg = json.loads(body)
     features_path = msg.get("features_path")
-    # Option: auto-run training script (synchronously)
     print("Received features_ready:", features_path)
-    # call python training script:
     subprocess.run(["python", "predictor/train.py"], check=True)
     ch.basic_ack(delivery_tag=method.delivery_tag)
 

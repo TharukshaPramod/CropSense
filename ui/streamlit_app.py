@@ -1,62 +1,176 @@
-# ui/streamlit_app.py
+"""
+CropSense - AI-powered Crop Yield Prediction System
+Main Streamlit Application
+"""
 import streamlit as st
-import requests, os, json
-st.set_page_config(page_title="CropSense Demo", layout="wide")
-st.title("CropSense — Crop Yield Prediction")
+import os
+import sys
+from datetime import datetime
 
-col1, col2 = st.columns([2,1])
+# Add current directory to path for imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-with col1:
-    st.header("Upload or select dataset")
-    uploaded = st.file_uploader("Upload CSV (optional)", type="csv")
-    if st.button("Use sample / collect raw and preprocess"):
-        try:
-            r = requests.post("http://localhost:8001/collect", json={"source":"local"}, timeout=10)
-            st.write("Collector:", r.json())
-            r2 = requests.post("http://localhost:8002/preprocess", json={}, timeout=120)
-            st.write("Preprocessor:", r2.json())
-            st.success("Preprocessing complete")
-        except Exception as e:
-            st.error("Ensure collector and preprocessor are running. " + str(e))
+# Configure page
+st.set_page_config(
+    page_title="CropSense - AI Crop Yield Prediction",
+    page_icon="🌾",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-    st.subheader("Manual single prediction")
-    rainfall = st.number_input("Rainfall (mm)", value=800.0)
-    temp = st.number_input("Temperature (C)", value=22.0)
-    area = st.number_input("Area (ha)", value=100.0)
-    fert = st.selectbox("Fertilizer used", [True, False])
-    irr = st.selectbox("Irrigation used", [True, False])
-    crop = st.selectbox("Crop", ["Wheat", "Rice", "Soybean", "Barley", "Cotton"])
-    if st.button("Predict & Explain"):
-        payload = {
-            "Region": "Demo",
-            "Soil_Type": "Sandy",
-            "Crop": crop,
-            "Rainfall_mm": rainfall,
-            "Temperature_Celsius": temp,
-            "Fertilizer_Used": fert,
-            "Irrigation_Used": irr,
-            "Weather_Condition": "Sunny",
-            "Days_to_Harvest": 120
-        }
-        headers = {}
-        # If you have login implemented, set token in env or ask user to paste
-        token = st.text_input("JWT token (optional)", "")
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
-        try:
-            pr = requests.post("http://localhost:8003/predict", json=payload, headers=headers, timeout=10)
-            if pr.status_code != 200:
-                st.error(f"Predict failed: {pr.text}")
+# Custom CSS for better styling
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 3rem;
+        font-weight: bold;
+        text-align: center;
+        color: #2E8B57;
+        margin-bottom: 2rem;
+    }
+    
+    .sub-header {
+        font-size: 1.2rem;
+        text-align: center;
+        color: #4ECDC4;
+        margin-bottom: 3rem;
+    }
+    
+    .metric-card {
+        background-color: #f0f2f6;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid #4ECDC4;
+    }
+    
+    .sidebar .sidebar-content {
+        background-color: #f8f9fa;
+    }
+    
+    .stButton > button {
+        background-color: #4ECDC4;
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+    }
+    
+    .stButton > button:hover {
+        background-color: #45B7B8;
+        color: white;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Main header
+st.markdown('<h1 class="main-header">🌾 CropSense</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">AI-powered Crop Yield Prediction System</p>', unsafe_allow_html=True)
+
+# Sidebar navigation
+with st.sidebar:
+    st.markdown("## 🧭 Navigation")
+    
+    # Page selection
+    page = st.selectbox(
+        "Select a page:",
+        [
+            "🏠 Dashboard",
+            "🔮 Predictions", 
+            "📊 Analysis",
+            "📄 Reports",
+            "⚙️ Settings"
+        ]
+    )
+    
+    st.markdown("---")
+    
+    # Quick status check
+    st.markdown("## 🔧 System Status")
+    
+    try:
+        from utils import check_service_health
+        health_status = check_service_health()
+        
+        for service, status in health_status.items():
+            if status:
+                st.success(f"✅ {service}")
             else:
-                out = pr.json()
-                st.success(f"Predicted yield: {out['predicted_yield']:.3f} t/ha")
-                ex = requests.post("http://localhost:8004/explain", json=payload, headers=headers, timeout=20)
-                if ex.status_code == 200:
-                    e = ex.json()
-                    st.subheader("Explanation")
-                    st.write(e.get("summary"))
-                    st.write("Top features:", e.get("top_features"))
-                else:
-                    st.warning("Explain failed: " + ex.text)
-        except Exception as e:
-            st.error("Error calling services: " + str(e))
+                st.error(f"❌ {service}")
+    except Exception as e:
+        st.error("❌ Status check failed")
+    
+    st.markdown("---")
+    
+    # Quick actions
+    st.markdown("## 🚀 Quick Actions")
+    
+    if st.button("🔄 Refresh Status"):
+        st.rerun()
+    
+    if st.button("📊 Run Pipeline"):
+        st.info("Navigate to Dashboard to run the full pipeline")
+    
+    st.markdown("---")
+    
+    # System info
+    st.markdown("## ℹ️ System Info")
+    st.markdown(f"**Version:** 1.0.0")
+    st.markdown(f"**Last Updated:** {datetime.now().strftime('%Y-%m-%d')}")
+    st.markdown(f"**Environment:** {'Docker' if os.path.exists('/.dockerenv') else 'Local'}")
+
+# Main content based on page selection
+if page == "🏠 Dashboard":
+    # Import and run dashboard page
+    try:
+        exec(open("pages/01_🏠_Dashboard.py").read())
+    except FileNotFoundError:
+        st.error("Dashboard page not found. Please ensure all page files are present.")
+    except Exception as e:
+        st.error(f"Error loading dashboard: {e}")
+
+elif page == "🔮 Predictions":
+    # Import and run predictions page
+    try:
+        exec(open("pages/02_🔮_Predictions.py").read())
+    except FileNotFoundError:
+        st.error("Predictions page not found. Please ensure all page files are present.")
+    except Exception as e:
+        st.error(f"Error loading predictions page: {e}")
+
+elif page == "📊 Analysis":
+    # Import and run analysis page
+    try:
+        exec(open("pages/03_📊_Analysis.py").read())
+    except FileNotFoundError:
+        st.error("Analysis page not found. Please ensure all page files are present.")
+    except Exception as e:
+        st.error(f"Error loading analysis page: {e}")
+
+elif page == "📄 Reports":
+    # Import and run reports page
+    try:
+        exec(open("pages/04_📄_Reports.py").read())
+    except FileNotFoundError:
+        st.error("Reports page not found. Please ensure all page files are present.")
+    except Exception as e:
+        st.error(f"Error loading reports page: {e}")
+
+elif page == "⚙️ Settings":
+    # Import and run settings page
+    try:
+        exec(open("pages/05_⚙️_Settings.py").read())
+    except FileNotFoundError:
+        st.error("Settings page not found. Please ensure all page files are present.")
+    except Exception as e:
+        st.error(f"Error loading settings page: {e}")
+
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: #666; padding: 2rem;'>
+    <p><strong>🌾 CropSense</strong> - AI-powered crop yield prediction system</p>
+    <p>Built with ❤️ using Streamlit, FastAPI, and Machine Learning</p>
+    <p>© 2024 CropSense. All rights reserved.</p>
+</div>
+""", unsafe_allow_html=True)

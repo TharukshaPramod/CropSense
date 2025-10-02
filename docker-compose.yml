@@ -1,0 +1,155 @@
+# docker-compose.yml (no top-level 'version' to avoid the version warning)
+services:
+
+  # Build image once (named image)
+  cropsense-image:
+    build: .
+    image: cropsense:latest
+    # keep container ephemeral (won't run by default)
+    command: ["sleep", "infinity"]
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: cropsense-rabbit
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  collector:
+    image: cropsense:latest
+    container_name: cropsense-collector
+    command: uvicorn data_collector.app:app --host 0.0.0.0 --port 8001 --reload
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./:/app:delegated
+      - ./data:/app/data
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+
+  preprocessor:
+    image: cropsense:latest
+    container_name: cropsense-preprocessor
+    command: uvicorn preprocessor.app:app --host 0.0.0.0 --port 8002 --reload
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./:/app:delegated
+      - ./data:/app/data
+    depends_on:
+      - collector
+    restart: unless-stopped
+
+  predictor:
+    image: cropsense:latest
+    container_name: cropsense-predictor
+    command: uvicorn predictor.serve:app --host 0.0.0.0 --port 8003 --reload
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./:/app:delegated
+      - ./data:/app/data
+      - ./predictor/models:/app/predictor/models
+      - ./common/models:/app/common/models
+    depends_on:
+      - preprocessor
+      - rabbitmq
+    restart: unless-stopped
+
+  worker:
+    image: cropsense:latest
+    container_name: cropsense-worker
+    command: python predictor/worker.py
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    volumes:
+      - ./:/app:delegated
+      - ./data:/app/data
+      - ./predictor/models:/app/predictor/models
+      - ./common/models:/app/common/models
+    depends_on:
+      - rabbitmq
+      - predictor
+    restart: unless-stopped
+
+  interpreter:
+    image: cropsense:latest
+    container_name: cropsense-interpreter
+    command: uvicorn interpreter.app:app --host 0.0.0.0 --port 8004 --reload
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./:/app:delegated
+      - ./data:/app/data
+      - ./predictor/models:/app/predictor/models
+      - ./common/models:/app/common/models
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - CROPSENSE_OLLAMA_MODEL=llama3
+    depends_on:
+      - predictor
+    restart: unless-stopped
+
+  ui:
+    image: cropsense:latest
+    container_name: cropsense-ui
+    command: streamlit run ui/streamlit_app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./:/app:delegated
+      - ./data:/app/data
+    environment:
+      - COLLECTOR_URL=http://collector:8001
+      - PREPROCESSOR_URL=http://preprocessor:8002
+      - PREDICTOR_URL=http://predictor:8003
+      - INTERPRETER_URL=http://interpreter:8004
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      - collector
+      - preprocessor
+      - predictor
+      - interpreter
+    restart: unless-stopped
+
+  orchestrator:
+    image: cropsense:latest
+    container_name: cropsense-orchestrator
+    command: python orchestrator/run_pipeline.py
+    environment:
+      - COLLECTOR_URL=http://collector:8001
+      - PREPROCESSOR_URL=http://preprocessor:8002
+      - PREDICTOR_URL=http://predictor:8003
+    depends_on:
+      - collector
+      - preprocessor
+      - predictor
+    restart: on-failure
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: cropsense-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "curl -s http://localhost:11434/api/tags || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+# named volumes if you prefer them (we mounted host folders above)
+volumes:
+  # data: {}
+  # predictor_models: {}
+  # common_models: {}
+  ollama: {}

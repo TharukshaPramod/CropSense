@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+.vscode
+.env
+*.log
+.DS_Store
+*.sqlite3
+*.db
+data/raw/*
+predictor/models/*
+common/models/*
