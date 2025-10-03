@@ -429,25 +429,27 @@ Based on the analysis, the following recommendations are made:
                     mime="text/markdown"
                 )
             elif report_format == "HTML":
-                html_content = f"""
-<!DOCTYPE html>
+                # Create HTML content without f-string backslash issues
+                html_style = """
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #2E8B57; }
+        h2 { color: #4ECDC4; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+"""
+                html_body = report_content.replace('#', '<h1>').replace('##', '<h2>').replace('\n', '<br>')
+                html_content = f"""<!DOCTYPE html>
 <html>
 <head>
     <title>CropSense Custom Report</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 40px; }}
-        h1 {{ color: #2E8B57; }}
-        h2 {{ color: #4ECDC4; }}
-        table {{ border-collapse: collapse; width: 100%; }}
-        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-        th {{ background-color: #f2f2f2; }}
+    <style>{html_style}
     </style>
 </head>
 <body>
-{report_content.replace('#', '<h1>').replace('##', '<h2>').replace('\n', '<br>')}
+{html_body}
 </body>
-</html>
-"""
+</html>"""
                 st.download_button(
                     label="🌐 Download HTML Report",
                     data=html_content,

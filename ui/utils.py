@@ -97,9 +97,10 @@ def predict_yield(payload: Dict) -> Tuple[bool, Dict]:
 def explain_prediction(payload: Dict) -> Tuple[bool, Dict]:
     """Get prediction explanation"""
     try:
+        # Allow a bit more time for explanation generation
         response = requests.post(f"{INTERPRETER_URL}/explain", 
                                json=payload, 
-                               timeout=30)
+                               timeout=45)
         if response.status_code == 200:
             result = response.json()
             return True, result

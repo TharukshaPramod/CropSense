@@ -121,49 +121,85 @@ with st.sidebar:
 
 # Main content based on page selection
 if page == "🏠 Dashboard":
-    # Import and run dashboard page
-    try:
-        exec(open("pages/01_🏠_Dashboard.py").read())
-    except FileNotFoundError:
-        st.error("Dashboard page not found. Please ensure all page files are present.")
-    except Exception as e:
-        st.error(f"Error loading dashboard: {e}")
+    st.info("🌐 **Dashboard Page** - Navigate to the Dashboard page in the sidebar to access the main dashboard features.")
+    st.markdown("""
+    ### 🎯 Available Features:
+    - **System Overview**: Service health and status monitoring
+    - **Quick Predict**: Simple prediction form
+    - **Pipeline Management**: Run data collection, preprocessing, and training
+    - **Recent Activity**: Track system usage and predictions
+    
+    ### 🚀 Quick Start:
+    1. Use the sidebar to navigate to different pages
+    2. Check service status in the sidebar
+    3. Run the full pipeline from the Dashboard
+    4. Make predictions and analyze results
+    """)
 
 elif page == "🔮 Predictions":
-    # Import and run predictions page
-    try:
-        exec(open("pages/02_🔮_Predictions.py").read())
-    except FileNotFoundError:
-        st.error("Predictions page not found. Please ensure all page files are present.")
-    except Exception as e:
-        st.error(f"Error loading predictions page: {e}")
+    st.info("🔮 **Predictions Page** - Navigate to the Predictions page in the sidebar to access advanced prediction features.")
+    st.markdown("""
+    ### 🎯 Available Features:
+    - **Single Prediction**: Make individual yield predictions
+    - **Batch Upload**: Process CSV files with multiple scenarios
+    - **Scenario Analysis**: Compare different farming conditions
+    - **Feature Importance**: Understand what drives predictions
+    
+    ### 📊 Prediction Types:
+    - **Real-time Predictions**: Get instant yield estimates
+    - **Batch Processing**: Upload CSV files for bulk predictions
+    - **Scenario Comparison**: Test different farming strategies
+    """)
 
 elif page == "📊 Analysis":
-    # Import and run analysis page
-    try:
-        exec(open("pages/03_📊_Analysis.py").read())
-    except FileNotFoundError:
-        st.error("Analysis page not found. Please ensure all page files are present.")
-    except Exception as e:
-        st.error(f"Error loading analysis page: {e}")
+    st.info("📊 **Analysis Page** - Navigate to the Analysis page in the sidebar to access data analysis features.")
+    st.markdown("""
+    ### 🔍 Analysis Features:
+    - **Feature Analysis**: Understand which factors affect yield most
+    - **Yield Trends**: Analyze yield patterns and distributions
+    - **Correlation Matrix**: Explore relationships between variables
+    - **Sensitivity Analysis**: See how input changes affect outputs
+    - **Model Performance**: Evaluate prediction accuracy
+    
+    ### 📈 Visualization Tools:
+    - Interactive charts and graphs
+    - Statistical analysis
+    - Performance metrics
+    - Data exploration tools
+    """)
 
 elif page == "📄 Reports":
-    # Import and run reports page
-    try:
-        exec(open("pages/04_📄_Reports.py").read())
-    except FileNotFoundError:
-        st.error("Reports page not found. Please ensure all page files are present.")
-    except Exception as e:
-        st.error(f"Error loading reports page: {e}")
+    st.info("📄 **Reports Page** - Navigate to the Reports page in the sidebar to access reporting features.")
+    st.markdown("""
+    ### 📋 Report Types:
+    - **Prediction Summary**: Overview of all predictions
+    - **Detailed Analysis**: Comprehensive feature analysis
+    - **Custom Reports**: Build reports with selected sections
+    - **Data Export**: Download results in multiple formats
+    
+    ### 📥 Export Options:
+    - **CSV**: Raw data and processed results
+    - **JSON**: Structured data format
+    - **Markdown**: Formatted reports
+    - **HTML**: Web-ready reports
+    """)
 
 elif page == "⚙️ Settings":
-    # Import and run settings page
-    try:
-        exec(open("pages/05_⚙️_Settings.py").read())
-    except FileNotFoundError:
-        st.error("Settings page not found. Please ensure all page files are present.")
-    except Exception as e:
-        st.error(f"Error loading settings page: {e}")
+    st.info("⚙️ **Settings Page** - Navigate to the Settings page in the sidebar to access configuration options.")
+    st.markdown("""
+    ### 🔧 Configuration Areas:
+    - **General Settings**: Theme, defaults, preferences
+    - **Model Configuration**: ML model parameters and testing
+    - **API Settings**: Service URLs and connection testing
+    - **System Status**: Health monitoring and resource usage
+    - **Data Management**: Backup, restore, cleanup options
+    
+    ### 🛠️ System Management:
+    - Service health monitoring
+    - Configuration backup/restore
+    - Performance tuning
+    - Data management tools
+    """)
 
 # Footer
 st.markdown("---")
