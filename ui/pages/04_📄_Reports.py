@@ -18,6 +18,8 @@ from utils import (
     generate_prediction_report, save_predictions_to_csv,
     create_feature_importance_chart, create_yield_distribution_chart
 )
+from auth_utils import is_authenticated
+from modern_footer import render_modern_footer
 
 st.set_page_config(
     page_title="CropSense Reports",
@@ -27,6 +29,10 @@ st.set_page_config(
 
 st.title("📄 Reports & Exports")
 st.markdown("Generate comprehensive reports and export your prediction data")
+
+if not is_authenticated():
+    st.warning("Please login from the 🔐 Login page to access reports.")
+    st.stop()
 
 # Initialize session state
 if "report_data" not in st.session_state:
@@ -555,6 +561,5 @@ elif report_type == "Data Export":
     else:
         st.info("No data available for export. Please generate some predictions first.")
 
-# Footer
-st.markdown("---")
-st.markdown("🌾 **CropSense Reports** - Comprehensive reporting and data export")
+# Render modern footer
+render_modern_footer()

@@ -1,0 +1,4 @@
+timestamp,predicted_yield,payload
+2025-10-03 15:26:16.733163,3.200000036739405,"{'Region': 'West', 'Soil_Type': 'Sandy', 'Crop': 'Wheat', 'Rainfall_mm': 0.30000000000000004, 'Temperature_Celsius': 28.21250000000001, 'Fertilizer_Used': True, 'Irrigation_Used': True, 'Weather_Condition': 'Sunny', 'Days_to_Harvest': 120}"
+2025-10-03 15:28:04.681382,3.200000036739405,"{'Region': 'West', 'Soil_Type': 'Clay', 'Crop': 'Soybean', 'Rainfall_mm': 800, 'Temperature_Celsius': 25, 'Fertilizer_Used': True, 'Irrigation_Used': True, 'Weather_Condition': 'Sunny', 'Days_to_Harvest': 120}"
+2025-10-03 15:28:57.098998,3.052839444068157,"{'Region': 'West', 'Soil_Type': 'Clay', 'Crop': 'Soybean', 'Rainfall_mm': 550, 'Temperature_Celsius': -4, 'Fertilizer_Used': False, 'Irrigation_Used': True, 'Weather_Condition': 'Rainy', 'Days_to_Harvest': 120}"

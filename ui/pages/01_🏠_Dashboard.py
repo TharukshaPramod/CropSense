@@ -16,6 +16,8 @@ from utils import (
     predict_yield, explain_prediction, create_metrics_dashboard,
     create_feature_importance_chart, create_yield_distribution_chart
 )
+from auth_utils import is_authenticated
+from modern_footer import render_modern_footer
 
 st.set_page_config(
     page_title="CropSense Dashboard",
@@ -25,6 +27,10 @@ st.set_page_config(
 
 st.title("🏠 CropSense Dashboard")
 st.markdown("Welcome to your AI-powered crop yield prediction system!")
+
+# Require login for dashboard interactions
+if not is_authenticated():
+    st.warning("Please login from the 🔐 Login page to use dashboard features.")
 
 # Sidebar for quick actions
 with st.sidebar:
@@ -183,7 +189,5 @@ if "prediction_history" in st.session_state and st.session_state.prediction_hist
     display_df.columns = ["Time", "Predicted Yield (tons/hectare)"]
     st.dataframe(display_df, use_container_width=True)
 
-# Footer
-st.markdown("---")
-st.markdown("🌾 **CropSense** - AI-powered crop yield prediction system")
-st.markdown("Built with ❤️ using Streamlit, FastAPI, and Machine Learning")
+# Render modern footer
+render_modern_footer()

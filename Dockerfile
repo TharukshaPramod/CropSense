@@ -4,11 +4,11 @@ FROM python:3.10-slim
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# Install small set of system deps needed for some packages (lightgbm, shap, etc)
-# If you want a smaller image, remove build-essential/gcc and avoid packages that need compilation.
+# Install system dependencies including bcrypt requirements
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
        build-essential gcc g++ libgomp1 git ca-certificates \
+       pkg-config libffi-dev libssl-dev \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy only requirements first (better cache)

@@ -10,6 +10,8 @@ import json
 # Add parent directory to path to import utils
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import check_service_health
+from auth_utils import is_authenticated, current_role
+from modern_footer import render_modern_footer
 
 st.set_page_config(
     page_title="CropSense Settings",
@@ -19,6 +21,11 @@ st.set_page_config(
 
 st.title("⚙️ Settings & Configuration")
 st.markdown("Configure your CropSense system and manage preferences")
+
+# Admin-only access
+if not is_authenticated() or current_role() != "admin":
+    st.warning("Settings are restricted to admin. Please login with an admin account.")
+    st.stop()
 
 # Initialize session state for settings
 if "settings" not in st.session_state:
@@ -456,6 +463,5 @@ elif setting_category == "Data Management":
             if st.button("🔄 Restore from Backup"):
                 st.warning("This would restore data from the uploaded backup file")
 
-# Footer
-st.markdown("---")
-st.markdown("🌾 **CropSense Settings** - System configuration and management")
+# Render modern footer
+render_modern_footer()

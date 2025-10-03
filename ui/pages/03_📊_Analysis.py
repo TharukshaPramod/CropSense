@@ -17,6 +17,8 @@ from utils import (
     predict_yield, explain_prediction, create_feature_importance_chart,
     load_sample_data, check_service_health
 )
+from auth_utils import is_authenticated
+from modern_footer import render_modern_footer
 
 st.set_page_config(
     page_title="CropSense Analysis",
@@ -25,7 +27,47 @@ st.set_page_config(
 )
 
 st.title("📊 Advanced Analysis")
+if not is_authenticated():
+    st.warning("Please login from the 🔐 Login page to use analysis.")
+    st.stop()
 st.markdown("Comprehensive analysis of crop yield predictions and feature relationships")
+
+# Helpers
+import numpy as _np
+
+def _generate_scenarios(n_scenarios: int = 50):
+    regions = ["West", "East", "North", "South"]
+    soil_types = ["Sandy", "Loam", "Clay", "Silt"]
+    crops = ["Wheat", "Rice", "Soybean", "Barley"]
+    weather_conditions = ["Sunny", "Cloudy", "Rainy", "Stormy"]
+    _np.random.seed(42)
+    scenarios = []
+    for i in range(n_scenarios):
+        scenario = {
+            "Region": _np.random.choice(regions),
+            "Soil_Type": _np.random.choice(soil_types),
+            "Crop": _np.random.choice(crops),
+            "Rainfall_mm": float(_np.clip(_np.random.normal(800, 200), 0, 2000)),
+            "Temperature_Celsius": float(_np.clip(_np.random.normal(25, 5), -10, 50)),
+            "Fertilizer_Used": bool(_np.random.choice([True, False])),
+            "Irrigation_Used": bool(_np.random.choice([True, False])),
+            "Weather_Condition": _np.random.choice(weather_conditions),
+            "Days_to_Harvest": int(_np.random.randint(90, 150))
+        }
+        scenarios.append(scenario)
+    return scenarios
+
+def _predict_or_simulate(scenario):
+    ok, result = predict_yield(scenario)
+    if ok and isinstance(result, dict) and "predicted_yield" in result:
+        return float(result.get("predicted_yield", 0))
+    base = 2.5
+    rain_factor = min(scenario["Rainfall_mm"] / 1000.0, 1.5)
+    temp = scenario["Temperature_Celsius"]
+    temp_factor = max(0.0, 1.0 - abs(temp - 25) / 25.0)
+    fert = 0.3 if scenario.get("Fertilizer_Used") else -0.2
+    irr = 0.2 if scenario.get("Irrigation_Used") else -0.1
+    return float(max(0.1, base + rain_factor + temp_factor + fert + irr))
 
 # Initialize session state
 if "analysis_data" not in st.session_state:
@@ -45,42 +87,18 @@ with st.sidebar:
     # Data generation options
     st.subheader("📊 Generate Sample Data")
     if st.button("🎲 Generate Random Scenarios"):
-        # Generate random scenarios for analysis
-        np.random.seed(42)
-        n_scenarios = 100
-        
-        regions = ["West", "East", "North", "South"]
-        soil_types = ["Sandy", "Loam", "Clay", "Silt"]
-        crops = ["Wheat", "Rice", "Soybean", "Barley"]
-        weather_conditions = ["Sunny", "Cloudy", "Rainy", "Stormy"]
-        
-        scenarios = []
-        for i in range(n_scenarios):
-            scenario = {
-                "Region": np.random.choice(regions),
-                "Soil_Type": np.random.choice(soil_types),
-                "Crop": np.random.choice(crops),
-                "Rainfall_mm": np.random.normal(800, 200),
-                "Temperature_Celsius": np.random.normal(25, 5),
-                "Fertilizer_Used": np.random.choice([True, False]),
-                "Irrigation_Used": np.random.choice([True, False]),
-                "Weather_Condition": np.random.choice(weather_conditions),
-                "Days_to_Harvest": np.random.randint(90, 150)
-            }
-            scenarios.append(scenario)
-        
-        # Make predictions for all scenarios
+        scenarios = _generate_scenarios(80)
         with st.spinner("Generating predictions..."):
             predictions = []
-            for scenario in scenarios:
-                success, result = predict_yield(scenario)
-                if success:
-                    scenario["Predicted_Yield"] = result.get("predicted_yield", 0)
-                    predictions.append(scenario)
-            
-            st.session_state.analysis_data = predictions
-            st.success(f"✅ Generated {len(predictions)} scenarios with predictions")
-            st.rerun()
+            prog = st.progress(0)
+            for i, scenario in enumerate(scenarios):
+                scenario["Predicted_Yield"] = _predict_or_simulate(scenario)
+                predictions.append(scenario)
+                if (i + 1) % 5 == 0:
+                    prog.progress((i + 1) / len(scenarios))
+        st.session_state.analysis_data = predictions
+        st.success(f"✅ Generated {len(predictions)} scenarios with predictions")
+        st.rerun()
     
     if st.button("🗑️ Clear Analysis Data"):
         st.session_state.analysis_data = []
@@ -88,7 +106,19 @@ with st.sidebar:
 
 # Main content based on analysis type
 if not st.session_state.analysis_data:
-    st.info("👆 Generate sample data from the sidebar to start analysis")
+    st.info("No analysis data yet. Generate scenarios to proceed.")
+    quick_cols = st.columns([1, 3])
+    with quick_cols[0]:
+        if st.button("⚡ Quick Generate 40", type="primary"):
+            scenarios = _generate_scenarios(40)
+            with st.spinner("Generating predictions..."):
+                predictions = []
+                for scenario in scenarios:
+                    scenario["Predicted_Yield"] = _predict_or_simulate(scenario)
+                    predictions.append(scenario)
+            st.session_state.analysis_data = predictions
+            st.success("✅ Sample generated")
+            st.rerun()
     
     # Show sample data preview
     st.subheader("📋 Sample Data Preview")
@@ -481,6 +511,5 @@ else:
         fig.add_vline(x=0, line_dash="dash", line_color="red", annotation_text="Perfect Prediction")
         st.plotly_chart(fig, use_container_width=True)
 
-# Footer
-st.markdown("---")
-st.markdown("🌾 **CropSense Analysis** - Advanced data analysis and visualization")
+# Render modern footer
+render_modern_footer()

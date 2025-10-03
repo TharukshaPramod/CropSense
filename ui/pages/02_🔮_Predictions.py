@@ -15,6 +15,9 @@ from utils import (
     predict_yield, explain_prediction, create_feature_importance_chart,
     create_yield_distribution_chart, save_predictions_to_csv, load_sample_data
 )
+from weather_soil import fetch_weather, fetch_soil
+from auth_utils import is_authenticated
+from modern_footer import render_modern_footer
 
 st.set_page_config(
     page_title="CropSense Predictions",
@@ -23,6 +26,9 @@ st.set_page_config(
 )
 
 st.title("🔮 Advanced Predictions")
+if not is_authenticated():
+    st.warning("Please login from the 🔐 Login page to use predictions.")
+    st.stop()
 st.markdown("Make single predictions or batch process multiple scenarios")
 
 # Initialize session state
@@ -79,6 +85,20 @@ if prediction_mode == "Single Prediction":
             temperature = st.slider("Temperature (°C)", -10, 50, 25, 1)
             weather = st.selectbox("Weather Condition", ["Sunny", "Cloudy", "Rainy", "Stormy"], key="single_weather")
             
+            # Geo + Auto-fetch
+            st.subheader("Location & Auto Data")
+            col_geo1, col_geo2 = st.columns(2)
+            with col_geo1:
+                lat = st.number_input("Latitude", value=6.9271, format="%.6f")
+            with col_geo2:
+                lon = st.number_input("Longitude", value=79.8612, format="%.6f")
+            col_dt1, col_dt2 = st.columns(2)
+            with col_dt1:
+                start_date = st.date_input("Start Date", value=datetime.now().date())
+            with col_dt2:
+                end_date = st.date_input("End Date", value=datetime.now().date())
+            auto_fetch = st.checkbox("Auto-fetch weather & soil from location", value=False)
+
             # Agricultural practices
             st.subheader("Agricultural Practices")
             fertilizer = st.checkbox("Fertilizer Used", value=True, key="single_fertilizer")
@@ -106,6 +126,19 @@ if prediction_mode == "Single Prediction":
                     "Weather_Condition": weather,
                     "Days_to_Harvest": days_to_harvest
                 }
+
+                # Optional: auto-fetch weather & soil and override
+                if auto_fetch:
+                    with st.spinner("Fetching weather & soil data..."):
+                        w = fetch_weather(lat, lon, start_date, end_date)
+                        s = fetch_soil(lat, lon)
+                        if w:
+                            payload["Rainfall_mm"] = float(w.get("Rainfall_mm", payload["Rainfall_mm"]))
+                            payload["Temperature_Celsius"] = float(w.get("Temperature_Celsius", payload["Temperature_Celsius"]))
+                        if s:
+                            # Map soil to optional advanced params if present
+                            payload["soil_ph"] = s.get("soil_ph")
+                            payload["organic_matter"] = s.get("organic_matter")
                 
                 with st.spinner("Making prediction..."):
                     # Make prediction
@@ -390,6 +423,5 @@ if st.session_state.predictions:
     results_df = pd.DataFrame(results_data)
     st.dataframe(results_df, use_container_width=True)
 
-# Footer
-st.markdown("---")
-st.markdown("🌾 **CropSense Predictions** - Advanced prediction interface")
+# Render modern footer
+render_modern_footer()

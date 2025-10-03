@@ -1,4 +1,4 @@
-python-multipart
+﻿python-multipart
 fastapi
 uvicorn[standard]
 pandas
@@ -15,5 +15,6 @@ python-jose
 python-dotenv
 pika
 plotly
+bcrypt>=4.0.0
 # transformers   # optional fallback
 # torch          # optional: huge, remove for faster builds if not used
