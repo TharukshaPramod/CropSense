@@ -91,8 +91,8 @@ services:
       - ./predictor/models:/app/predictor/models
       - ./common/models:/app/common/models
     environment:
-      - OLLAMA_HOST=http://ollama:11434
-      - CROPSENSE_OLLAMA_MODEL=llama3
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - CROPSENSE_OLLAMA_MODEL=llama3:latest
     depends_on:
       - predictor
       - ollama
@@ -112,7 +112,8 @@ services:
       - PREPROCESSOR_URL=http://preprocessor:8002
       - PREDICTOR_URL=http://predictor:8003
       - INTERPRETER_URL=http://interpreter:8004
-      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - CROPSENSE_OLLAMA_MODEL=llama3:latest
     depends_on:
       - collector
       - preprocessor

@@ -30,7 +30,7 @@ def explain_sample(sample: Dict[str, float]) -> Dict[str, Any]:
         if c not in row.columns:
             row[c] = 0
 
-    # booleans -> numeric
+    # booleans -> numeric - FIXED: Use proper dtype conversion
     for bcol in ["Fertilizer_Used", "Irrigation_Used"]:
         if bcol in row.columns:
             val = row.at[0, bcol]
@@ -39,9 +39,15 @@ def explain_sample(sample: Dict[str, float]) -> Dict[str, Any]:
             else:
                 if isinstance(val, str):
                     lv = val.lower()
-                    row.at[0, bcol] = 1.0 if lv in ("true","1","yes") else 0.0 if lv in ("false","0","no") else np.nan
+                    if lv in ("true", "1", "yes"):
+                        row.at[0, bcol] = 1.0
+                    elif lv in ("false", "0", "no"):
+                        row.at[0, bcol] = 0.0
+                    else:
+                        row.at[0, bcol] = np.nan
                 else:
-                    row.at[0, bcol] = 1.0 if bool(val) else 0.0
+                    # Convert to float first to avoid dtype warning
+                    row.at[0, bcol] = float(bool(val))
 
     if encoders:
         for c, mapping in encoders.items():
@@ -57,7 +63,8 @@ def explain_sample(sample: Dict[str, float]) -> Dict[str, Any]:
                         found = None
                         for k in mapping.keys():
                             if isinstance(k, str) and k.lower() == raw_val.lower():
-                                found = mapping[k]; break
+                                found = mapping[k]
+                                break
                         row.at[0, c] = float(found) if found is not None else np.nan
                     else:
                         row.at[0, c] = float(mapped) if mapped is not None else np.nan
