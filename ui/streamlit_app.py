@@ -22,6 +22,21 @@ st.set_page_config(
 # MODERN CSS WITH ANIMATIONS AND GRADIENTS
 css = """
 <style>
+/* ===== HIDE DEFAULT FOOTER & STYLING ===== */
+footer {visibility: hidden;}
+#MainMenu {visibility: hidden;}
+
+/* Make the default header blend better */
+.stApp [data-testid="stToolbar"] {
+    opacity: 0.7;
+    color: #2E8B57 !important;
+    font-size: 0.9rem;
+    transition: opacity 0.3s ease;
+}
+.stApp [data-testid="stToolbar"]:hover {
+    opacity: 1;
+}
+
 /* Modern Color Variables */
 :root {
     --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -501,8 +516,13 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     
+    # CLEAR HOME NAVIGATION BUTTON
+    if st.button("🏠 **Return to Home**", use_container_width=True, type="primary"):
+        st.rerun()
+    
     st.markdown("## 🧭 Navigation")
     
+    # Remove "💰 Commercialization" from main app navigation since it's now a separate page
     default_page = "🏠 Dashboard" if is_authenticated() else "🔐 Login"
     page_options = ["🔐 Login", "👤 Profile", "🏠 Dashboard", "🔮 Predictions", "📊 Analysis", "📄 Reports", "⚙️ Settings"]
     
