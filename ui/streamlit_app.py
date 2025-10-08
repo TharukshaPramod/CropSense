@@ -19,6 +19,23 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Import authentication FIRST
+try:
+    from auth_utils import is_authenticated, current_user
+    from utils import check_service_health
+except ImportError as e:
+    def is_authenticated():
+        return False
+    def current_user():
+        return None
+    def check_service_health():
+        return {"Collector": False, "Preprocessor": False, "Predictor": False, "Interpreter": False}
+
+# REDIRECT LOGIC - MUST BE AT THE TOP AFTER IMPORTS
+if is_authenticated() and st.query_params.get("nav") != "Home":
+    # Redirect authenticated users to dashboard
+    st.switch_page("pages/01_🏠_Dashboard.py")
+
 # MODERN CSS WITH ANIMATIONS AND GRADIENTS
 css = """
 <style>
@@ -361,24 +378,65 @@ footer {visibility: hidden;}
     .hero-subtitle-modern { font-size: 1.1rem; }
     .showcase-title-modern { font-size: 2rem; }
 }
+
+/* Welcome Back Message */
+.welcome-back {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 20px;
+    text-align: center;
+    margin: 2rem 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
 </style>
 """
 st.markdown(css, unsafe_allow_html=True)
-
-# NOW import other modules
-try:
-    from auth_utils import is_authenticated
-    from utils import check_service_health
-except ImportError as e:
-    def is_authenticated():
-        return False
-    def check_service_health():
-        return {"Collector": False, "Preprocessor": False, "Predictor": False, "Interpreter": False}
 
 # Initialize session state
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
+# WELCOME BACK MESSAGE FOR AUTHENTICATED USERS (if they choose to stay on home)
+if is_authenticated() and st.query_params.get("nav") == "Home":
+    st.markdown(f"""
+    <div class="welcome-back">
+        <h2>🎉 Welcome back, {current_user()}!</h2>
+        <p>You're already logged in. Access your dashboard or continue browsing.</p>
+        <div style="margin-top: 1.5rem;">
+            <button onclick="window.location.href='?nav=Dashboard'" style="
+                background: white; 
+                color: #2E8B57; 
+                border: none; 
+                padding: 12px 30px; 
+                border-radius: 25px; 
+                font-weight: 600; 
+                cursor: pointer;
+                margin: 0 10px;
+                transition: all 0.3s ease;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.2)'" 
+            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                🚀 Go to Dashboard
+            </button>
+            <button onclick="window.location.href='?'" style="
+                background: transparent; 
+                color: white; 
+                border: 2px solid white; 
+                padding: 12px 30px; 
+                border-radius: 25px; 
+                font-weight: 600; 
+                cursor: pointer;
+                margin: 0 10px;
+                transition: all 0.3s ease;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" 
+            onmouseout="this.style.background='transparent'">
+                🌾 Continue Browsing
+            </button>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# If not authenticated, show the main landing page
 # MODERN HERO SECTION
 st.markdown("""
 <div class="hero-modern">
@@ -452,7 +510,10 @@ st.markdown("""
 cta_col1, cta_col2, cta_col3 = st.columns(3)
 with cta_col1:
     if st.button("🚀 Start Free Trial", key="cta_trial", use_container_width=True):
-        st.success("🎉 Free trial activated! Explore all features for 14 days.")
+        if is_authenticated():
+            st.success("🎉 You're already signed up! Check out your dashboard.")
+        else:
+            st.success("🎉 Free trial activated! Explore all features for 14 days.")
 with cta_col2:
     if st.button("📞 Book Demo", key="cta_demo", use_container_width=True):
         st.info("📅 Our team will contact you to schedule a personalized demo.")
@@ -516,17 +577,34 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     
-    # CLEAR HOME NAVIGATION BUTTON
-    if st.button("🏠 **Return to Home**", use_container_width=True, type="primary"):
-        st.rerun()
+    # Dynamic sidebar based on authentication
+    if is_authenticated():
+        if st.button("🚀 **Go to Dashboard**", use_container_width=True, type="primary"):
+            st.query_params = {"nav": "Dashboard"}
+            st.rerun()
+        
+        st.markdown(f"**Welcome, {current_user()}!** 👋")
+        
+        if st.button("🚪 **Logout**", use_container_width=True):
+            from auth_utils import logout
+            logout()
+            st.success("Logged out successfully!")
+            st.rerun()
+    else:
+        if st.button("🔐 **Login to Dashboard**", use_container_width=True, type="primary"):
+            st.switch_page("pages/00_🔐_Login.py")
     
     st.markdown("## 🧭 Navigation")
     
-    # Remove "💰 Commercialization" from main app navigation since it's now a separate page
-    default_page = "🏠 Dashboard" if is_authenticated() else "🔐 Login"
-    page_options = ["🔐 Login", "👤 Profile", "🏠 Dashboard", "🔮 Predictions", "📊 Analysis", "📄 Reports", "⚙️ Settings"]
+    page_options = ["🔐 Login", "🏠 Home"] if not is_authenticated() else ["🏠 Home", "🚀 Dashboard"]
     
-    page = st.selectbox("Select a page:", page_options, index=page_options.index(default_page))
+    page = st.selectbox("Select a page:", page_options, index=1 if not is_authenticated() else 0)
+    
+    if page == "🔐 Login" and not is_authenticated():
+        st.switch_page("pages/00_🔐_Login.py")
+    elif page == "🚀 Dashboard" and is_authenticated():
+        st.query_params = {"nav": "Dashboard"}
+        st.rerun()
     
     st.markdown("---")
     st.markdown("## 📈 Live Metrics")
@@ -543,111 +621,97 @@ with st.sidebar:
         st.rerun()
     
     if st.button("📊 Generate Report", key="sidebar_report", use_container_width=True):
-        st.info("Report generation started...")
+        if is_authenticated():
+            st.info("📋 Report generation started...")
+        else:
+            st.info("Please login to generate reports")
     
     if st.button("🌤️ Weather Update", key="sidebar_weather", use_container_width=True):
-        st.info("Fetching latest weather data...")
-    
-    st.markdown("---")
-    st.markdown("## 🏆 Achievements")
-    
-    st.progress(75)
-    st.caption("Profile Completion: 75%")
-    
-    st.progress(90)
-    st.caption("AI Model Accuracy: 90%")
-    
-    st.progress(60)
-    st.caption("Data Coverage: 60%")
+        if is_authenticated():
+            st.info("⏳ Fetching latest weather data...")
+        else:
+            st.info("Please login to access weather data")
 
-# MAIN CONTENT BASED ON PAGE SELECTION
-if page == "🔐 Login":
-    st.info("Use the Login page in the sidebar (page is separate).")
-    
-elif page == "👤 Profile":
-    st.info("Use the Profile page in the sidebar (page is separate).")
-    
-elif page == "🏠 Dashboard":
-    # ENHANCED SHOWCASE SECTION
+# ENHANCED SHOWCASE SECTION
+st.markdown("""
+<div class="showcase-modern">
+    <div class="showcase-title-modern">Advanced Features</div>
+    <div class="showcase-subtitle-modern">
+        Discover how CropSense leverages cutting-edge technology to revolutionize agriculture
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Advanced feature cards
+col1, col2 = st.columns(2)
+
+with col1:
     st.markdown("""
-    <div class="showcase-modern">
-        <div class="showcase-title-modern">Advanced Features</div>
-        <div class="showcase-subtitle-modern">
-            Discover how CropSense leverages cutting-edge technology to revolutionize agriculture
+    <div class="feature-card-modern gradient-border-1">
+        <div class="feature-icon-showcase">🧠</div>
+        <div class="feature-title-showcase">Neural Network Predictions</div>
+        <div class="feature-desc-showcase">
+            Our deep learning models analyze historical data, weather patterns, and soil conditions 
+            to provide accurate yield predictions with 98.7% accuracy.
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Advanced feature cards
-    col1, col2 = st.columns(2)
+    st.markdown("""
+    <div class="feature-card-modern gradient-border-3">
+        <div class="feature-icon-showcase">🛰️</div>
+        <div class="feature-title-showcase">Satellite Imaging</div>
+        <div class="feature-desc-showcase">
+            High-resolution satellite imagery combined with computer vision algorithms 
+            to monitor crop health, growth stages, and potential issues in real-time.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    with col1:
-        st.markdown("""
-        <div class="feature-card-modern gradient-border-1">
-            <div class="feature-icon-showcase">🧠</div>
-            <div class="feature-title-showcase">Neural Network Predictions</div>
-            <div class="feature-desc-showcase">
-                Our deep learning models analyze historical data, weather patterns, and soil conditions 
-                to provide accurate yield predictions with 98.7% accuracy.
-            </div>
+    st.markdown("""
+    <div class="feature-card-modern gradient-border-5">
+        <div class="feature-icon-showcase">📱</div>
+        <div class="feature-title-showcase">Mobile Integration</div>
+        <div class="feature-desc-showcase">
+            Access all features on-the-go with our mobile app. Receive alerts, 
+            view reports, and make decisions from anywhere in the world.
         </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="feature-card-modern gradient-border-3">
-            <div class="feature-icon-showcase">🛰️</div>
-            <div class="feature-title-showcase">Satellite Imaging</div>
-            <div class="feature-desc-showcase">
-                High-resolution satellite imagery combined with computer vision algorithms 
-                to monitor crop health, growth stages, and potential issues in real-time.
-            </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col2:
+    st.markdown("""
+    <div class="feature-card-modern gradient-border-2">
+        <div class="feature-icon-showcase">🤝</div>
+        <div class="feature-title-showcase">Collaborative Farming</div>
+        <div class="feature-desc-showcase">
+            Connect with other farmers, share insights, and collaborate on best practices 
+            through our secure community platform.
         </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="feature-card-modern gradient-border-5">
-            <div class="feature-icon-showcase">📱</div>
-            <div class="feature-title-showcase">Mobile Integration</div>
-            <div class="feature-desc-showcase">
-                Access all features on-the-go with our mobile app. Receive alerts, 
-                view reports, and make decisions from anywhere in the world.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
     
-    with col2:
-        st.markdown("""
-        <div class="feature-card-modern gradient-border-2">
-            <div class="feature-icon-showcase">🤝</div>
-            <div class="feature-title-showcase">Collaborative Farming</div>
-            <div class="feature-desc-showcase">
-                Connect with other farmers, share insights, and collaborate on best practices 
-                through our secure community platform.
-            </div>
+    st.markdown("""
+    <div class="feature-card-modern gradient-border-4">
+        <div class="feature-icon-showcase">💸</div>
+        <div class="feature-title-showcase">Cost Optimization</div>
+        <div class="feature-desc-showcase">
+            AI-powered recommendations for resource allocation, reducing waste and 
+            maximizing ROI while maintaining sustainable practices.
         </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="feature-card-modern gradient-border-4">
-            <div class="feature-icon-showcase">💸</div>
-            <div class="feature-title-showcase">Cost Optimization</div>
-            <div class="feature-desc-showcase">
-                AI-powered recommendations for resource allocation, reducing waste and 
-                maximizing ROI while maintaining sustainable practices.
-            </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="feature-card-modern gradient-border-6">
+        <div class="feature-icon-showcase">🌍</div>
+        <div class="feature-title-showcase">Global Market Insights</div>
+        <div class="feature-desc-showcase">
+            Access real-time market prices, demand forecasts, and export opportunities 
+            to make informed business decisions.
         </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="feature-card-modern gradient-border-6">
-            <div class="feature-icon-showcase">🌍</div>
-            <div class="feature-title-showcase">Global Market Insights</div>
-            <div class="feature-desc-showcase">
-                Access real-time market prices, demand forecasts, and export opportunities 
-                to make informed business decisions.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
 # MODERN FOOTER
 current_year = datetime.now().year
