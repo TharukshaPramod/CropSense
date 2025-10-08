@@ -1,6 +1,12 @@
-# .streamlit/config.toml (simplified)
+# .streamlit/config.toml - SMART CONFIG
 [server]
-headless = false
+headless = true
+# Let Streamlit decide the address automatically
+# address = "0.0.0.0"  # Remove this line entirely
+port = 8501
+enableCORS = false
+enableXsrfProtection = false
 
 [browser]
 gatherUsageStats = false
+# Remove serverAddress to avoid conflicts
