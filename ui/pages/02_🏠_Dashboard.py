@@ -117,7 +117,7 @@ st.markdown("""
 if not is_authenticated():
     st.error("🔐 Authentication required. Please log in to access the dashboard.")
     if st.button("Go to Login Page"):
-        st.switch_page("pages/00_🔐_Login.py")
+        st.switch_page("pages/01_🔐_Login.py")
     st.stop()
 
 # USER WELCOME SECTION

@@ -34,7 +34,7 @@ except ImportError as e:
 # REDIRECT LOGIC - MUST BE AT THE TOP AFTER IMPORTS
 if is_authenticated() and st.query_params.get("nav") != "Home":
     # Redirect authenticated users to dashboard
-    st.switch_page("pages/01_🏠_Dashboard.py")
+    st.switch_page("pages/02_🏠_Dashboard.py")
 
 # MODERN CSS WITH ANIMATIONS AND GRADIENTS
 css = """
@@ -592,7 +592,7 @@ with st.sidebar:
             st.rerun()
     else:
         if st.button("🔐 **Login to Dashboard**", use_container_width=True, type="primary"):
-            st.switch_page("pages/00_🔐_Login.py")
+            st.switch_page("pages/01_🔐_Login.py")
     
     st.markdown("## 🧭 Navigation")
     
@@ -601,7 +601,7 @@ with st.sidebar:
     page = st.selectbox("Select a page:", page_options, index=1 if not is_authenticated() else 0)
     
     if page == "🔐 Login" and not is_authenticated():
-        st.switch_page("pages/00_🔐_Login.py")
+        st.switch_page("pages/01_🔐_Login.py")
     elif page == "🚀 Dashboard" and is_authenticated():
         st.query_params = {"nav": "Dashboard"}
         st.rerun()
