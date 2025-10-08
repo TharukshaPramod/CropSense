@@ -1,4 +1,4 @@
-# common/auth.py - COMPLETE VERSION WITH ALL REQUIRED FUNCTIONS
+# common/auth.py - FIXED FOR STREAMLIT CLOUD
 import sqlite3
 import os
 import time
@@ -18,13 +18,35 @@ SECRET = os.environ.get("CROPSENSE_JWT_SECRET", "dev-secret-change-me")
 ALGO = "HS256"
 ACCESS_EXPIRE = int(os.environ.get("CROPSENSE_JWT_EXPIRE_SECONDS", 60 * 60 * 4))
 
-# SQLite DB - Use container path
-DB_DIR = "/app/common"
-DB_PATH = os.path.join(DB_DIR, "auth.db")
+# FIXED: Use writable directory for Streamlit Cloud
+# Try multiple writable locations
+DB_PATHS = [
+    os.path.join(os.path.expanduser("~"), ".cropsense", "auth.db"),  # User home
+    os.path.join(os.getcwd(), "cropsense_data", "auth.db"),          # Current directory
+    "/tmp/cropsense_auth.db"                                         # Temp directory
+]
 
-# Ensure directory exists
-os.makedirs(DB_DIR, exist_ok=True)
-logger.info(f"Database path: {DB_PATH}")
+# Find first writable location
+DB_PATH = None
+for db_path in DB_PATHS:
+    try:
+        db_dir = os.path.dirname(db_path)
+        os.makedirs(db_dir, exist_ok=True)
+        # Test if we can write to this directory
+        test_file = os.path.join(db_dir, "test_write")
+        with open(test_file, 'w') as f:
+            f.write("test")
+        os.remove(test_file)
+        DB_PATH = db_path
+        logger.info(f"Using database path: {DB_PATH}")
+        break
+    except (PermissionError, OSError):
+        continue
+
+# If no writable location found, use in-memory database
+if DB_PATH is None:
+    DB_PATH = ":memory:"
+    logger.info("Using in-memory database (no writable storage available)")
 
 # Thread-local storage for database connections
 _thread_local = threading.local()
@@ -33,9 +55,10 @@ def get_db_connection():
     """Get a database connection for the current thread"""
     if not hasattr(_thread_local, "db_connection") or _thread_local.db_connection is None:
         _thread_local.db_connection = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=30.0)
-        # Enable WAL mode for better concurrency
-        _thread_local.db_connection.execute("PRAGMA journal_mode=WAL")
-        _thread_local.db_connection.execute("PRAGMA busy_timeout=5000")
+        # Enable WAL mode for better concurrency (if not in-memory)
+        if DB_PATH != ":memory:":
+            _thread_local.db_connection.execute("PRAGMA journal_mode=WAL")
+            _thread_local.db_connection.execute("PRAGMA busy_timeout=5000")
     return _thread_local.db_connection
 
 @contextmanager
@@ -53,10 +76,6 @@ def db_transaction():
 def init_db():
     """Initialize database tables"""
     with db_transaction() as cursor:
-        # Don't drop tables if they exist - preserve existing data
-        # cursor.execute("DROP TABLE IF EXISTS profiles")
-        # cursor.execute("DROP TABLE IF EXISTS users")
-        
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY,
@@ -172,7 +191,7 @@ def init_admin_user():
     except ValueError:
         logger.info("Admin user already exists")
 
-# Profile functions - ADDED BACK
+# Profile functions
 def upsert_profile(username: str, full_name: str | None = None, organization: str | None = None, 
                   default_region: str | None = None, default_crop: str | None = None):
     """Create or update user profile"""
@@ -221,29 +240,6 @@ def get_profile(username: str):
             "default_region": p[3],
             "default_crop": p[4],
         }
-
-# Test function
-def test_auth():
-    """Test authentication"""
-    print("=== Testing Auth ===")
-    
-    test_cases = [
-        ("tharu123", "Normal password"),
-        ("a" * 100, "Long password"),
-        ("test@123", "Special chars"),
-    ]
-    
-    for pwd, desc in test_cases:
-        try:
-            # Test hashing
-            pwd_bytes = pwd.encode('utf-8')
-            if len(pwd_bytes) > 72:
-                pwd_bytes = pwd_bytes[:72]
-            hashed = bcrypt.hashpw(pwd_bytes, bcrypt.gensalt())
-            verified = bcrypt.checkpw(pwd_bytes, hashed)
-            print(f"✓ {desc}: Verified: {verified}")
-        except Exception as e:
-            print(f"✗ {desc}: Error: {e}")
 
 # Initialize database and admin
 try:
