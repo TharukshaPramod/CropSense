@@ -1,0 +1,5 @@
+timestamp,predicted_yield,payload
+2025-10-18 11:35:52.519558,3.200000036739405,"{'Region': 'East', 'Soil_Type': 'Sandy', 'Crop': 'Barley', 'Rainfall_mm': 176.4999999999999, 'Temperature_Celsius': 27.66547619047619, 'Fertilizer_Used': True, 'Irrigation_Used': True, 'Weather_Condition': 'Stormy', 'Days_to_Harvest': 120}"
+2025-10-18 11:37:58.233407,3.200000036739405,"{'Region': 'West', 'Soil_Type': 'Sandy', 'Crop': 'Wheat', 'Rainfall_mm': 800, 'Temperature_Celsius': 25, 'Fertilizer_Used': True, 'Irrigation_Used': True, 'Weather_Condition': 'Sunny', 'Days_to_Harvest': 120}"
+2025-10-18 11:37:58.233419,4.247160487644547,"{'Region': 'East', 'Soil_Type': 'Loam', 'Crop': 'Wheat', 'Rainfall_mm': 1000, 'Temperature_Celsius': 28, 'Fertilizer_Used': True, 'Irrigation_Used': True, 'Weather_Condition': 'Sunny', 'Days_to_Harvest': 110}"
+2025-10-18 11:37:58.233424,3.052839444068157,"{'Region': 'West', 'Soil_Type': 'Sandy', 'Crop': 'Wheat', 'Rainfall_mm': 800, 'Temperature_Celsius': 15, 'Fertilizer_Used': True, 'Irrigation_Used': True, 'Weather_Condition': 'Cloudy', 'Days_to_Harvest': 120}"
